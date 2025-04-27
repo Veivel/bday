@@ -6,21 +6,20 @@ services:
     image: birthday-app:latest
     container_name: birthday-app
     restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - MONGO_URI=mongodb://mongo:27017/birthday
+    volumes:
+      - ./.env:/usr/src/app/.env:ro
     depends_on:
       - mongo
     ports:
-      - '3000:3000'
+      - 3000:3000
   mongo:
     image: mongo:6.0
     container_name: birthday-mongo
     restart: unless-stopped
     volumes:
-      - mongo-data:/data/db
+      - mongo-data-dev:/data/db
     environment:
       MONGO_INITDB_DATABASE: birthday
 
 volumes:
-  mongo-data:
+  mongo-data-dev:

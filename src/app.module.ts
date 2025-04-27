@@ -6,7 +6,7 @@ import { TimezonesModule } from './timezones/timezones.module';
 import { UsersModule } from './users/user.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WishModule } from './wish/wish.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -14,7 +14,13 @@ import { ConfigModule } from '@nestjs/config';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
-    MongooseModule.forRoot('mongodb://localhost:27017/birthday'),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        uri: config.get<string>('MONGODB_URI'),
+      }),
+    }),
     WishModule,
     TimezonesModule,
     UsersModule,

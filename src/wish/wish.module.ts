@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { WishService } from './wish.service';
 import { WishController } from './wish.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from 'src/Users/schemas/user.schema';
 import { ConfigModule } from '@nestjs/config';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [

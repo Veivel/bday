@@ -4,9 +4,9 @@ import {
   Timezone,
   TimezoneSchema,
 } from 'src/timezones/schemas/timezones.schema';
-import { User, UserSchema } from 'src/Users/schemas/user.schema';
-import { UsersController } from 'src/Users/users.controller';
-import { UsersService } from 'src/Users/users.service';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { UsersController } from '../users/users.controller';
+import { UsersService } from '../users/users.service';
 @Module({
   imports: [
     MongooseModule.forFeature([

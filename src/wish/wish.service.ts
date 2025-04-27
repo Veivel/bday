@@ -1,22 +1,40 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection } from 'mongoose';
-import { User, UserDocument } from 'src/Users/schemas/user.schema';
 import { DateTime, Duration } from 'luxon';
 import { Timezone } from 'src/timezones/schemas/timezones.schema';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import { CreateEmailResponseSuccess, Resend } from 'resend';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class WishService {
+  private readonly logger = new Logger(WishService.name);
+  private resend = new Resend(this.configService.get('RESEND_API_KEY'));
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectConnection() private connection: Connection,
     private configService: ConfigService,
   ) {}
 
+  async sendEmail(user: User): Promise<CreateEmailResponseSuccess | null> {
+    const { data, error } = await this.resend.emails.send({
+      from: 'hello@testmail.veivelp.com',
+      to: user.email,
+      subject: 'Happy Birthday!',
+      html: `<p>Happy birthday <strong>${user.name}</strong>!</p>`,
+    });
+    if (error) {
+      this.logger.error({ error });
+      return null;
+    } else {
+      this.logger.log(`Successfully sent email to ${user.email}`);
+      return data;
+    }
+  }
+
   async checkForBirthdays() {
-    console.log('Cron job is running, checking for birthdays!');
+    this.logger.log('Cron job is running, checking for birthdays!');
     const delta: luxon.Duration = Duration.fromObject({ days: 3 });
     const nowDate: luxon.DateTime = DateTime.now().toUTC();
 
@@ -31,30 +49,16 @@ export class WishService {
       })
       .exec();
 
+    this.logger.log(`Found ${users.length} users within delta...`);
     // check if now.utc == birthday.utc + local_time_to_send, send birthday
-
-    console.log(`Found ${users.length} users within delta...`);
-    const resend = new Resend(this.configService.get('RESEND_API_KEY'));
-
     users.forEach(async (user) => {
       const nextBirthWishDate: luxon.DateTime = DateTime.fromISO(
         user.nextBirthWish.toISOString(),
       ).toUTC();
       const diff = nowDate.diff(nextBirthWishDate).as('hours');
-      console.log(diff, user.timezone.identifier, user.timezone.utcOffset);
+      this.logger.log(diff, user.timezone.identifier, user.timezone.utcOffset);
       if (diff > 9 && diff < 10.1) {
-        const { data, error } = await resend.emails.send({
-          from: 'hello@testmail.veivelp.com',
-          to: user.email,
-          subject: 'Happy Birthday!',
-          html: `<p>Happy birthday <strong>${user.name}</strong>!</p>`,
-        });
-        if (error) {
-          console.error({ error });
-          return;
-        } else {
-          console.log(`Successfully sent mail to ${user.email}`);
-        }
+        this.sendEmail(user);
 
         const newNextBirthWishDate = nextBirthWishDate.plus(
           Duration.fromObject({ years: 1 }),
@@ -64,7 +68,7 @@ export class WishService {
             nextBirthWish: newNextBirthWishDate.toISO(),
           })
           .save();
-        console.log(res);
+        this.logger.log(res);
       }
     });
   }

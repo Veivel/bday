@@ -13,6 +13,7 @@ import {
   TimezoneDocument,
 } from 'src/timezones/schemas/timezones.schema';
 import { DateTime } from 'luxon';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -30,7 +31,7 @@ export class UsersService {
 
     const user = await this.userModel.findOne({ email: dto.email }).exec();
     if (Boolean(user)) {
-      throw new BadRequestException(`User with email already exists`);
+      throw new BadRequestException(`Email already in use`);
     }
 
     // get UTC representation of birthdate at 00:00 local tz
@@ -92,6 +93,96 @@ export class UsersService {
       .find()
       .populate<{ timezone: Timezone }>('timezone')
       .exec();
+  }
+
+  async update(id: string, dto: UpdateUserDto): Promise<User> {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+
+    // if changing email
+    if (dto.email && dto.email !== user.email) {
+      const conflict = await this.userModel
+        .findOne({ email: dto.email })
+        .exec();
+      if (conflict) throw new BadRequestException('Email already in use');
+      user.email = dto.email;
+    }
+
+    // if changing timezone
+    let tzDoc = await this.tzModel.findById(user.timezone).exec();
+    if (dto.timezone) {
+      tzDoc = await this.tzModel.findOne({ identifier: dto.timezone }).exec();
+      if (!tzDoc)
+        throw new NotFoundException(`Timezone "${dto.timezone}" not found`);
+      user.timezone = tzDoc._id as any;
+    }
+
+    // if changing name
+    if (dto.name) {
+      user.name = dto.name;
+    }
+
+    // revalidate birth date
+    if (dto.birthDate) {
+      try {
+        const date: luxon.DateTime = DateTime.fromFormat(
+          `${dto.birthDate} 00:00:00`,
+          'yyyy-MM-dd HH:mm:ss',
+          {
+            zone: dto.timezone,
+          },
+        );
+        if (!date.isValid) {
+          throw new BadRequestException(
+            'Recheck your birthDate field (invalid date)',
+          );
+        }
+        if (date >= DateTime.now()) {
+          throw new BadRequestException(
+            'Recheck your birthDate field (cannot be in the future)',
+          );
+        }
+      } catch (e) {
+        if (e instanceof BadRequestException) {
+          throw e;
+        } else {
+          throw new InternalServerErrorException(
+            'Something went wrong when verifying birthDate',
+          );
+        }
+      }
+    }
+
+    // if changing birthDate or timezone, recompute birthDate & nextBirthWish
+    if (dto.birthDate || dto.timezone) {
+      const bdayStr = dto.birthDate
+        ? dto.birthDate
+        : DateTime.fromJSDate(user.birthDate).toFormat('yyyy-MM-dd');
+
+      const dt = DateTime.fromFormat(
+        `${bdayStr} 00:00:00`,
+        'yyyy-MM-dd HH:mm:ss',
+        { zone: tzDoc.identifier },
+      );
+
+      // get next occurrence this year
+      const next = DateTime.fromObject(
+        {
+          year: DateTime.now().year,
+          month: dt.month,
+          day: dt.day,
+          hour: dt.hour,
+          minute: dt.minute,
+        },
+        { zone: tzDoc.identifier },
+      );
+
+      user.birthDate = dt.toUTC().toJSDate();
+      user.nextBirthWish = next.toUTC().toJSDate();
+    }
+
+    const updated = await user.save();
+    return updated.populate<{ timezone: Timezone }>('timezone');
   }
 
   async findByEmail(email: string): Promise<User> {
