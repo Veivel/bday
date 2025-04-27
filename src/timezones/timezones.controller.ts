@@ -21,17 +21,22 @@ export class TimezonesController {
     return this.tzService.create(createDto);
   }
 
+  @Get('identifiers')
+  async findAllIdentifiers(): Promise<string[]> {
+    return this.tzService.findAllIdentifiers();
+  }
+
   @Get()
   async findAll(): Promise<Timezone[]> {
     return this.tzService.findAll();
   }
 
-  @Get(':identifier')
+  @Get('identifier/:identifier(*)')
   async findOne(@Param('identifier') id: string): Promise<Timezone> {
     return this.tzService.findOne(id);
   }
 
-  @Delete(':identifier')
+  @Delete('identifier/:identifier(*)')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('identifier') id: string): Promise<void> {
     return this.tzService.remove(id);

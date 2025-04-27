@@ -1,20 +1,31 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument, Types } from 'mongoose';
+import { Timezone } from 'src/timezones/schemas/timezones.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
 @Schema()
 export class User {
-  @Prop()
-  username: string;
+  @Prop({
+    required: true,
+  })
+  name: string;
 
-  @Prop()
+  @Prop({
+    required: true,
+  })
   email: string;
 
-  @Prop()
-  timezone: string;
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Timezone',
+    required: true,
+  })
+  timezone: Timezone;
 
-  @Prop()
+  @Prop({
+    required: true,
+  })
   birthday: string;
 }
 

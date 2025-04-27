@@ -1,22 +1,55 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
+import { User } from './schemas/user.schema';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post()
-  create(): string {
-    return 'This action adds a new user';
+  async create(@Body() createDto: CreateUserDto): Promise<User> {
+    return this.usersService.create(createDto);
   }
 
   @Get()
-  findAll(): string {
-    return 'This action returns all users';
+  async findAll(): Promise<User[] | User> {
+    return this.usersService.findAll();
   }
 
-  @Get('/:id')
-  findById(): string {
-    return '';
+  @Get('email/:email')
+  async findOneEmail(@Param('email') email: string): Promise<User[] | User> {
+    if (email) {
+      return this.usersService.findByEmail(email);
+    }
+  }
+
+  @Get('_id/:id')
+  async findOneByObjectId(@Param('id') id: string): Promise<User[] | User> {
+    if (id) {
+      return this.usersService.findByObjectId(id);
+    }
+  }
+
+  @Delete('email/:email')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('email') email: string): Promise<void> {
+    return this.usersService.remove(email);
+  }
+
+  @Delete(':objectId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeByObjectId(@Param('objectId') objectId: string): Promise<void> {
+    return this.usersService.removeByObjectId(objectId);
   }
 }
