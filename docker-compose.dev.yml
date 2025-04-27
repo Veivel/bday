@@ -1,0 +1,13 @@
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: birthday-mongo-dev
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data-dev:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: birthday
+
+volumes:
+  mongo-data-dev:
