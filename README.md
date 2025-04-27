@@ -37,7 +37,9 @@ including the cron scheduler.
 ## Design
 
 I chose NestJS because of how opinionated the design is. Best practices should not be
-lingering questions for me to ponder upon particularly in this assignment/test.
+lingering questions for me to ponder upon particularly in this assignment/test. Additionally, 
+I used `luxon` as a library to work with datetime and timezones because Javascript's default
+date capabilities can be unintuitive.
 
 NestJS is inherently a domain-driven framework, which explains why
 I made three modules: users (user management), timezones (for IANA timezones), 
@@ -46,6 +48,15 @@ and wish (sending the birthday wishes).
 Each module has its own schema (model/entity), DTO, as well as controllers and services. 
 Validation happens in the classes like DTOs and schemas (powered by `class-validator`) and also a bit in the service.
 With more time, I would have refactored the validation be in the DTOs and schemas as much as possible.
+
+I decided to put the birthday wishes worker as part of the NestJS app 
+because I found a library for my need, `@nestjs/schedule`. The cron schedule is to
+run the 'birthday checks' every hour at minute 15. 
+It checks users whose birthdays are within two days (both ways) of right now, and then
+sees if it is between 09.00 - 10.00 in the user's local timezone. If it is,
+it sends out an email via Resend.
+
+For the IANA timezone collection, I quickly made [this sheet](https://docs.google.com/spreadsheets/d/14S0vlHBEs1tZHOxv8lZATN4giT4bRU1XrYUECC0ByfM/edit?usp=sharing) via [Wikipedia](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) (which is basically a compressed version of the IANA timezone db), before downloading it as a CSV and then making a script to seed the MongoDB collection using the CSV file.
 
 Majority of other design decisions were taken from official docs: https://docs.nestjs.com/
 
@@ -72,5 +83,5 @@ Majority of other design decisions were taken from official docs: https://docs.n
 
 - Verifying email address is not a fake one when creating a new user.
 - Fulfilling birthday wish backlog if server or cron worker goes down for several hours / fault tolerance
-- Comprehensive testing (the unit testing done was limited)
 - Entity validation should be either domain-based or service-based - currently it is both... (see create-user DTO and createUser service)
+- The biggest and main limitation of this project here is unit testing - the testing I did was very limited, and ideally I could do more comprehensive testing.

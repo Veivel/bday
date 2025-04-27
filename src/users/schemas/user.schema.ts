@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
-import { Timezone } from 'src/timezones/schemas/timezones.schema';
+import { Timezone } from '@/timezones/schemas/timezones.schema';
 
 export type UserDocument = HydratedDocument<User>;
 

@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as csv from 'csv-parser';
-import { AppModule } from '../src/app.module';
-import { TimezonesService } from '../src/timezones/timezones.service';
-import { CreateTimezoneDto } from '../src/timezones/dto/create-timezone.dto';
+import { AppModule } from '@/app.module';
+import { TimezonesService } from '@/timezones/timezones.service';
+import { CreateTimezoneDto } from '@/timezones/dto/create-timezone.dto';
+
+/**
+ * This file is to be run as a separate file, and
+ * not with the rest of the NestJS app.
+ */
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);

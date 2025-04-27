@@ -8,7 +8,6 @@ import { CreateTimezoneDto } from './dto/create-timezone.dto';
 export class TimezonesService {
   constructor(
     @InjectModel(Timezone.name) private tzModel: Model<TimezoneDocument>,
-    @InjectConnection() private connection: Connection,
   ) {}
 
   async create(createDto: CreateTimezoneDto): Promise<Timezone> {

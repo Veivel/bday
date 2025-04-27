@@ -11,7 +11,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import {
   Timezone,
   TimezoneDocument,
-} from 'src/timezones/schemas/timezones.schema';
+} from '@/timezones/schemas/timezones.schema';
 import { DateTime } from 'luxon';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -20,7 +20,6 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Timezone.name) private tzModel: Model<TimezoneDocument>,
-    @InjectConnection() private connection: Connection,
   ) {}
 
   async create(dto: CreateUserDto): Promise<User> {

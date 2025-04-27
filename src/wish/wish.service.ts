@@ -1,11 +1,11 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection } from 'mongoose';
 import { DateTime, Duration } from 'luxon';
-import { Timezone } from 'src/timezones/schemas/timezones.schema';
+import { Timezone } from '@/timezones/schemas/timezones.schema';
 import { ConfigService } from '@nestjs/config';
 import { CreateEmailResponseSuccess, Resend } from 'resend';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { User, UserDocument } from '@/users/schemas/user.schema';
 
 @Injectable()
 export class WishService {
@@ -13,7 +13,6 @@ export class WishService {
   private resend = new Resend(this.configService.get('RESEND_API_KEY'));
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectConnection() private connection: Connection,
     private configService: ConfigService,
   ) {}
 
@@ -48,16 +47,20 @@ export class WishService {
         },
       })
       .exec();
+    this.logger.debug(`Found ${users.length} users within delta...`);
 
-    this.logger.log(`Found ${users.length} users within delta...`);
-    // check if now.utc == birthday.utc + local_time_to_send, send birthday
+    // check if now.utc == birthday.utc + 9 hours, send birthday
     users.forEach(async (user) => {
       const nextBirthWishDate: luxon.DateTime = DateTime.fromISO(
         user.nextBirthWish.toISOString(),
       ).toUTC();
       const diff = nowDate.diff(nextBirthWishDate).as('hours');
-      this.logger.log(diff, user.timezone.identifier, user.timezone.utcOffset);
-      if (diff > 9 && diff < 10.1) {
+      this.logger.debug(
+        diff,
+        user.timezone.identifier,
+        user.timezone.utcOffset,
+      );
+      if (diff > 9 && diff < 10) {
         this.sendEmail(user);
 
         const newNextBirthWishDate = nextBirthWishDate.plus(
@@ -68,7 +71,7 @@ export class WishService {
             nextBirthWish: newNextBirthWishDate.toISO(),
           })
           .save();
-        this.logger.log(res);
+        this.logger.debug(res);
       }
     });
   }
