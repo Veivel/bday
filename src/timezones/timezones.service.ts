@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Timezone, TimezoneDocument } from './schemas/timezones.schema';
 import { CreateTimezoneDto } from './dto/create-timezone.dto';
 
