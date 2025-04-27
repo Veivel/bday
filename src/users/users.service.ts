@@ -11,8 +11,7 @@ import {
   Timezone,
   TimezoneDocument,
 } from 'src/timezones/schemas/timezones.schema';
-import { validate } from 'class-validator';
-import mongoose from 'mongoose';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class UsersService {
@@ -25,7 +24,7 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<User> {
     const tz = await this.tzModel.findOne({ identifier: dto.timezone }).exec();
     if (!tz) {
-      throw new NotFoundException(`Timezone "${tz._id}" not found`);
+      throw new NotFoundException(`Timezone ${dto.timezone} not found`);
     }
 
     const user = await this.userModel.findOne({ email: dto.email }).exec();
@@ -33,13 +32,38 @@ export class UsersService {
       throw new BadRequestException(`User with email already exists`);
     }
 
-    const created = new this.userModel({
+    // get UTC representation of birthdate at 00:00 local tz
+    const date: luxon.DateTime = DateTime.fromFormat(
+      `${dto.birthDate} 00:00:00`,
+      'yyyy-MM-dd HH:mm:ss',
+      {
+        zone: dto.timezone,
+      },
+    );
+
+    const nextBirthDay: luxon.DateTime = DateTime.fromObject(
+      {
+        year: DateTime.now().year,
+        month: date.month,
+        day: date.day,
+        hour: date.hour,
+        minute: date.minute,
+      },
+      {
+        zone: dto.timezone,
+      },
+    );
+
+    // user validation already done by DTO
+    const newUser = new this.userModel({
       name: dto.name,
       email: dto.email,
-      birthday: dto.birthday,
       timezone: tz._id,
+      birthDate: date.toUTC().toISO(),
+      nextBirthWish: nextBirthDay.toUTC().toISO(),
     });
-    return created.save();
+    const created = await newUser.save();
+    return created.populate<{ timezone: Timezone }>('timezone');
   }
 
   findAll(): Promise<User[]> {
@@ -50,7 +74,10 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userModel.findOne({ email: email }).exec();
+    const user = await this.userModel
+      .findOne({ email: email })
+      .populate<{ timezone: Timezone }>('timezone')
+      .exec();
     if (!user) {
       throw new NotFoundException(`User ${email} not found`);
     }
@@ -59,7 +86,10 @@ export class UsersService {
 
   async findByObjectId(id: string): Promise<User> {
     try {
-      const user = await this.userModel.findById(id).exec();
+      const user = await this.userModel
+        .findById(id)
+        .populate<{ timezone: Timezone }>('timezone')
+        .exec();
       if (!user) {
         throw new NotFoundException(`User ${id} not found`);
       }

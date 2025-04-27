@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument, Types } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import { Timezone } from 'src/timezones/schemas/timezones.schema';
 
 export type UserDocument = HydratedDocument<User>;
@@ -16,6 +16,7 @@ export class User {
   })
   email: string;
 
+  // important: need to populate when fetching
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Timezone',
@@ -23,10 +24,18 @@ export class User {
   })
   timezone: Timezone;
 
+  // ISO-8601 UTC rep of birthday at 00:00:00 local tz
   @Prop({
     required: true,
+    type: Date,
   })
-  birthday: string;
+  birthDate: Date;
+
+  @Prop({
+    required: true,
+    type: Date,
+  })
+  nextBirthWish: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
