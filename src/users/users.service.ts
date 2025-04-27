@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
@@ -41,6 +42,27 @@ export class UsersService {
       },
     );
 
+    // check date validity
+    try {
+      if (!date.isValid) {
+        throw new BadRequestException(
+          'Recheck your birthDate field (invalid date)',
+        );
+      }
+      if (date >= DateTime.now()) {
+        throw new BadRequestException(
+          'Recheck your birthDate field (cannot be in the future)',
+        );
+      }
+    } catch (e) {
+      if (e instanceof BadRequestException) {
+        throw e;
+      } else {
+        throw new InternalServerErrorException(
+          'Something went wrong when verifying birthDate',
+        );
+      }
+    }
     const nextBirthDay: luxon.DateTime = DateTime.fromObject(
       {
         year: DateTime.now().year,
@@ -53,7 +75,6 @@ export class UsersService {
         zone: dto.timezone,
       },
     );
-
     // user validation already done by DTO
     const newUser = new this.userModel({
       name: dto.name,

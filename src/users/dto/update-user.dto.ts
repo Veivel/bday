@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEmail, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsEmail, Matches } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -9,13 +9,14 @@ export class UpdateUserDto {
   @IsEmail()
   email?: string;
 
-  /** the timezone identifier (e.g. "Europe/Paris") */
   @IsOptional()
   @IsString()
   timezone?: string;
 
-  /** birth date in YYYY-MM-DD format */
   @IsOptional()
-  @IsDateString()
-  birthDate?: string;
+  @IsString()
+  @Matches(/^(\d{4})-(0[1-9]|1[0-2]|[1-9])-([1-9]|0[1-9]|[1-2]\d|3[0-1])$/, {
+    message: 'Birth date must be in YYYY-MM-DD format',
+  })
+  birthDate: string;
 }
