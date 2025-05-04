@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './schemas/user.schema';
@@ -23,6 +24,19 @@ export class UsersController {
     return this.usersService.create(createDto);
   }
 
+  @Get()
+  async findAll(@Query('email') email?: string): Promise<User[]> {
+    if (email) {
+      return this.usersService.findAllByEmail(email);
+    }
+    return this.usersService.findAll();
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<User> {
+    return this.usersService.findOneById(id);
+  }
+
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -31,34 +45,9 @@ export class UsersController {
     return this.usersService.update(id, dto);
   }
 
-  @Get()
-  async findAll(): Promise<User[] | User> {
-    return this.usersService.findAll();
-  }
-
-  @Get('email/:email')
-  async findOneEmail(@Param('email') email: string): Promise<User[] | User> {
-    if (email) {
-      return this.usersService.findByEmail(email);
-    }
-  }
-
-  @Get('_id/:id')
-  async findOneByObjectId(@Param('id') id: string): Promise<User[] | User> {
-    if (id) {
-      return this.usersService.findByObjectId(id);
-    }
-  }
-
-  @Delete('email/:email')
+  @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('email') email: string): Promise<void> {
-    return this.usersService.remove(email);
-  }
-
-  @Delete(':objectId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeByObjectId(@Param('objectId') objectId: string): Promise<void> {
-    return this.usersService.removeByObjectId(objectId);
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.usersService.remove(id);
   }
 }

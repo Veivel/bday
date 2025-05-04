@@ -184,18 +184,18 @@ export class UsersService {
     return updated.populate<{ timezone: Timezone }>('timezone');
   }
 
-  async findByEmail(email: string): Promise<User> {
-    const user = await this.userModel
-      .findOne({ email: email })
+  async findAllByEmail(email: string): Promise<User[]> {
+    const users = await this.userModel
+      .find({ email: email })
       .populate<{ timezone: Timezone }>('timezone')
       .exec();
-    if (!user) {
-      throw new NotFoundException(`User ${email} not found`);
+    if (!users || users.length == 0) {
+      throw new NotFoundException(`Users by email ${email} not found`);
     }
-    return user;
+    return users;
   }
 
-  async findByObjectId(id: string): Promise<User> {
+  async findOneById(id: string): Promise<User> {
     try {
       const user = await this.userModel
         .findById(id)
