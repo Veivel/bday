@@ -95,30 +95,8 @@ export class UsersService {
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
-    const user = await this.userModel.findById(id).exec();
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-
-    // if changing email
-    if (dto.email && dto.email !== user.email) {
-      const conflict = await this.userModel
-        .findOne({ email: dto.email })
-        .exec();
-      if (conflict) throw new BadRequestException('Email already in use');
-      user.email = dto.email;
-    }
-
-    // if changing timezone
-    let tzDoc = await this.tzModel.findById(user.timezone).exec();
-    if (dto.timezone) {
-      tzDoc = await this.tzModel.findOne({ identifier: dto.timezone }).exec();
-      if (!tzDoc)
-        throw new NotFoundException(`Timezone "${dto.timezone}" not found`);
-      user.timezone = tzDoc._id as any;
-    }
-
-    // if changing name
-    if (dto.name) {
-      user.name = dto.name;
+    if (id === null) {
+      throw new BadRequestException('User ID cannot be null');
     }
 
     // revalidate birth date
@@ -152,39 +130,77 @@ export class UsersService {
       }
     }
 
-    // if changing birthDate or timezone, recompute birthDate & nextBirthWish
-    if (dto.birthDate || dto.timezone) {
-      const bdayStr = dto.birthDate
-        ? dto.birthDate
-        : DateTime.fromJSDate(user.birthDate).toFormat('yyyy-MM-dd');
+    try {
+      const user = await this.userModel.findById(id).exec();
+      if (!user) throw new NotFoundException(`User ${id} not found`);
 
-      const dt = DateTime.fromFormat(
-        `${bdayStr} 00:00:00`,
-        'yyyy-MM-dd HH:mm:ss',
-        { zone: tzDoc.identifier },
-      );
+      // if changing email
+      if (dto.email && dto.email !== user.email) {
+        const conflict = await this.userModel
+          .findOne({ email: dto.email })
+          .exec();
+        if (conflict) throw new BadRequestException('Email already in use');
+        user.email = dto.email;
+      }
 
-      // get next occurrence this year
-      const next = DateTime.fromObject(
-        {
-          year: DateTime.now().year,
-          month: dt.month,
-          day: dt.day,
-          hour: dt.hour,
-          minute: dt.minute,
-        },
-        { zone: tzDoc.identifier },
-      );
+      // if changing timezone
+      let tzDoc = await this.tzModel.findById(user.timezone).exec();
+      if (dto.timezone) {
+        tzDoc = await this.tzModel.findOne({ identifier: dto.timezone }).exec();
+        if (!tzDoc)
+          throw new NotFoundException(`Timezone "${dto.timezone}" not found`);
+        user.timezone = tzDoc._id as any;
+      }
 
-      user.birthDate = dt.toUTC().toJSDate();
-      user.nextBirthWish = next.toUTC().toJSDate();
+      // if changing name
+      if (dto.name) {
+        user.name = dto.name;
+      }
+
+      // if changing birthDate or timezone, recompute birthDate & nextBirthWish
+      if (dto.birthDate || dto.timezone) {
+        const bdayStr = dto.birthDate
+          ? dto.birthDate
+          : DateTime.fromJSDate(user.birthDate).toFormat('yyyy-MM-dd');
+
+        const dt = DateTime.fromFormat(
+          `${bdayStr} 00:00:00`,
+          'yyyy-MM-dd HH:mm:ss',
+          { zone: tzDoc.identifier },
+        );
+
+        // get next occurrence this year
+        const next = DateTime.fromObject(
+          {
+            year: DateTime.now().year,
+            month: dt.month,
+            day: dt.day,
+            hour: dt.hour,
+            minute: dt.minute,
+          },
+          { zone: tzDoc.identifier },
+        );
+
+        user.birthDate = dt.toUTC().toJSDate();
+        user.nextBirthWish = next.toUTC().toJSDate();
+      }
+
+      const updated = await user.save();
+      return updated.populate<{ timezone: Timezone }>('timezone');
+    } catch (e) {
+      if (e.name == 'CastError') {
+        throw new BadRequestException(`${id} is not a valid ObjectID`);
+      } else {
+        throw new BadRequestException(e);
+      }
     }
-
-    const updated = await user.save();
-    return updated.populate<{ timezone: Timezone }>('timezone');
   }
 
   async findAllByEmail(email: string): Promise<User[]> {
+    if (email === null) {
+      throw new BadRequestException('User ID cannot be null');
+    }
+
     const users = await this.userModel
       .find({ email: email })
       .populate<{ timezone: Timezone }>('timezone')
@@ -196,6 +212,10 @@ export class UsersService {
   }
 
   async findOneById(id: string): Promise<User> {
+    if (id === null) {
+      throw new BadRequestException('User ID cannot be null');
+    }
+
     try {
       const user = await this.userModel
         .findById(id)
@@ -206,21 +226,30 @@ export class UsersService {
       }
       return user;
     } catch (e) {
-      throw new BadRequestException(e);
+      if (e.name == 'CastError') {
+        throw new BadRequestException(`${id} is not a valid ObjectID`);
+      } else {
+        throw new BadRequestException(e);
+      }
     }
   }
 
-  async remove(email: string): Promise<void> {
-    const res = await this.userModel.deleteOne({ email: email }).exec();
-    if (res.deletedCount === 0) {
-      throw new NotFoundException(`User with email ${email} not found`);
+  async remove(id: string): Promise<void> {
+    if (id === null) {
+      throw new BadRequestException('User ID cannot be null');
     }
-  }
 
-  async removeByObjectId(objectId: string): Promise<void> {
-    const res = await this.userModel.deleteOne({ _id: objectId }).exec();
-    if (res.deletedCount === 0) {
-      throw new NotFoundException(`User ${objectId} not found`);
+    try {
+      const res = await this.userModel.deleteOne({ _id: id }).exec();
+      if (res.deletedCount === 0) {
+        throw new NotFoundException(`User ${id} not found`);
+      }
+    } catch (e) {
+      if (e.name == 'CastError') {
+        throw new BadRequestException(`${id} is not a valid ObjectID`);
+      } else {
+        throw new BadRequestException(e);
+      }
     }
   }
 }

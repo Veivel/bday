@@ -77,7 +77,7 @@ describe('UsersService', () => {
 
   describe('findByObjectId', () => {
     it('should find by object ID', async () => {
-      const result = await service.findByObjectId('507f1f77bcf86cd799439011');
+      const result = await service.findOneById('507f1f77bcf86cd799439011');
       expect(result).toEqual(
         expect.objectContaining({
           _id: '507f1f77bcf86cd799439011',
