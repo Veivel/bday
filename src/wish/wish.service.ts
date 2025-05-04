@@ -50,7 +50,7 @@ export class WishService {
     this.logger.debug(`Found ${users.length} users within delta...`);
 
     // check if now.utc == birthday.utc + 9 hours, send birthday
-    users.forEach((user) => {
+    for (const user of users) {
       const nextBirthWishDate: luxon.DateTime = DateTime.fromISO(
         user.nextBirthWish.toISOString(),
       ).toUTC();
@@ -66,19 +66,19 @@ export class WishService {
         const newNextBirthWishDate = nextBirthWishDate.plus(
           Duration.fromObject({ years: 1 }),
         );
-        const response = user
-          .$set({
-            nextBirthWish: newNextBirthWishDate.toISO(),
-          })
-          .save();
-        response
-          .then((res) => {
-            this.logger.debug(res);
-          })
-          .catch((err) => {
-            this.logger.error(err);
-          });
+
+        // save next birthday to user
+        try {
+          const response = await user
+            .$set({
+              nextBirthWish: newNextBirthWishDate.toISO(),
+            })
+            .save();
+          this.logger.debug(response);
+        } catch (error) {
+          this.logger.error(error);
+        }
       }
-    });
+    }
   }
 }
