@@ -31,12 +31,12 @@ export class TimezonesController {
     return this.tzService.findAll();
   }
 
-  @Get('identifier/:identifier(*)')
+  @Get(':identifier(*)')
   async findOne(@Param('identifier') id: string): Promise<Timezone> {
     return this.tzService.findOne(id);
   }
 
-  @Delete('identifier/:identifier(*)')
+  @Delete(':identifier(*)')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('identifier') id: string): Promise<void> {
     return this.tzService.remove(id);
