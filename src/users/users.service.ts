@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/timezones/schemas/timezones.schema';
 import { DateTime } from 'luxon';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginatedResponse } from '@/users/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -87,11 +88,35 @@ export class UsersService {
     return created.populate<{ timezone: Timezone }>('timezone');
   }
 
-  findAll(): Promise<User[]> {
-    return this.userModel
-      .find()
-      .populate<{ timezone: Timezone }>('timezone')
-      .exec();
+  async findPaginated(
+    filter: FilterQuery<UserDocument>,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResponse<User>> {
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .sort({ _id: 1 })
+        .skip(skip)
+        .limit(limit)
+        .populate<{ timezone: Timezone }>('timezone')
+        .exec(),
+      this.userModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {

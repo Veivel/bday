@@ -14,6 +14,10 @@ import { UsersService } from './users.service';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from '@/users/dto/pagination.dto';
 
 @Controller('users')
 export class UsersController {
@@ -25,11 +29,17 @@ export class UsersController {
   }
 
   @Get()
-  async findAll(@Query('email') email?: string): Promise<User[]> {
-    if (email) {
-      return this.usersService.findAllByEmail(email);
-    }
-    return this.usersService.findAll();
+  async findAll(
+    @Query() paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedResponse<User>> {
+    const filter = paginationQuery.email
+      ? { email: paginationQuery.email }
+      : {};
+    return this.usersService.findPaginated(
+      filter,
+      paginationQuery.page,
+      paginationQuery.limit,
+    );
   }
 
   @Get(':id')

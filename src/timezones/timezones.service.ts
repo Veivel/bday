@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Timezone, TimezoneDocument } from './schemas/timezones.schema';
@@ -32,6 +36,9 @@ export class TimezonesService {
   }
 
   async findOne(identifier: string): Promise<Timezone> {
+    if (identifier === null) {
+      throw new BadRequestException(`Timezone identifier cannot be null`);
+    }
     const tz = await this.tzModel.findOne({ identifier: identifier }).exec();
     if (!tz) {
       throw new NotFoundException(`Timezone ${identifier} not found`);
